@@ -13,7 +13,12 @@ struct WorkoutDayView: View {
 
     let day: WorkoutDay
 
-    @State private var showAddExercise = false
+    @State private var showAddExercise   = false
+    @State private var showEditExercise  = false
+    @State private var editingExercise: Exercise? = nil
+    @State private var editName = ""
+    @State private var editSets = "3"
+    @State private var editReps = "10"
 
     var accentColor: Color {
         cycleManager.isInPeriod ? Color(hex: "#E84393") : Color(hex: "#1D9E75")
@@ -45,6 +50,25 @@ struct WorkoutDayView: View {
                                 ExerciseRow(exercise: exercise)
                             }
                             .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    context.delete(exercise)
+                                } label: {
+                                    Label("Löschen", systemImage: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    editingExercise = exercise
+                                    editName = exercise.name
+                                    editSets = "\(exercise.targetSets)"
+                                    editReps = "\(exercise.targetReps)"
+                                    showEditExercise = true
+                                } label: {
+                                    Label("Bearbeiten", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                            }
                         }
                     }
                 }
@@ -70,6 +94,43 @@ struct WorkoutDayView: View {
         .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: $showAddExercise) {
             ExercisePickerView(day: day)
+        }
+        .sheet(isPresented: $showEditExercise) {
+            NavigationStack {
+                Form {
+                    Section("Übungsname") {
+                        TextField("Name", text: $editName)
+                    }
+                    Section("Ziel") {
+                        HStack {
+                            Text("Sätze"); Spacer()
+                            TextField("3", text: $editSets).keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(width: 60)
+                        }
+                        HStack {
+                            Text("Wiederholungen"); Spacer()
+                            TextField("10", text: $editReps).keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(width: 60)
+                        }
+                    }
+                }
+                .navigationTitle("Übung bearbeiten")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading)  { Button("Abbrechen") { showEditExercise = false } }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Speichern") {
+                            if let ex = editingExercise {
+                                ex.name       = editName
+                                ex.targetSets = Int(editSets) ?? ex.targetSets
+                                ex.targetReps = Int(editReps) ?? ex.targetReps
+                            }
+                            showEditExercise = false
+                        }
+                        .fontWeight(.semibold)
+                        .disabled(editName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+            }
+            .presentationDetents([.medium])
         }
     }
 

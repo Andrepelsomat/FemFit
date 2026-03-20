@@ -17,6 +17,8 @@ struct ExerciseDetailView: View {
     @State private var repsInput    = ""
     @State private var noteInput    = ""
     @State private var savedBanner  = false
+    @State private var showTimer    = false
+    @State private var lastSetNumber = 0
 
     var isInPeriod: Bool { cycleManager.isInPeriod }
     var accentColor: Color { isInPeriod ? Color(hex: "#E84393") : Color(hex: "#1D9E75") }
@@ -82,6 +84,12 @@ struct ExerciseDetailView: View {
             // Felder aktualisieren wenn Modus wechselt
             weightInput = suggestedWeight
             repsInput   = exercise.lastReps(period: isInPeriod).map(String.init) ?? ""
+        }
+        .overlay {
+            if showTimer {
+                RestTimerView(isShowing: $showTimer, setNumber: lastSetNumber)
+                    .transition(.opacity)
+            }
         }
     }
 
@@ -354,6 +362,12 @@ struct ExerciseDetailView: View {
         // Felder zurücksetzen (Gewicht behalten als Vorschlag)
         repsInput   = ""
         noteInput   = ""
+
+        // Timer starten
+        lastSetNumber = todaySets.count + 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            withAnimation(.spring(response: 0.4)) { showTimer = true }
+        }
 
         // Kurzes Feedback
         withAnimation {
